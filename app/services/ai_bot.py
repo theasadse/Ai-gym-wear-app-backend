@@ -57,12 +57,6 @@ class GeminiAIBotService(AIBotService):
         self.model = genai.GenerativeModel(model_name)
         self.model_name = model_name
         self.fallback = fallback
-        self.alternates = [
-            model_name,
-            "gemini-pro",
-            "gemini-1.0-pro",
-            "gemini-1.0-pro-latest",
-        ]
 
     async def generate_reply(
         self, message: str, history: Optional[List[Dict[str, str]]] = None
@@ -82,16 +76,6 @@ class GeminiAIBotService(AIBotService):
         try:
             return (await loop.run_in_executor(None, _sync_call)).strip()
         except Exception as exc:
-            # Try alternates in order if not-found.
-            if "not found" in str(exc).lower():
-                for alt in self.alternates:
-                    if alt == self.model_name:
-                        continue
-                    logger.warning("Gemini model not found; retrying with %s", alt)
-                    genai.configure(api_key=settings.gemini_api_key)
-                    self.model = genai.GenerativeModel(alt)
-                    self.model_name = alt
-                    return await self.generate_reply(message, history)
             logger.error("Gemini generation failed", exc_info=exc)
             if self.fallback:
                 return await self.fallback.generate_reply(message, history)

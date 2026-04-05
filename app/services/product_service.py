@@ -18,9 +18,10 @@ async def list_products(
     category: Optional[str] = None,
     tag: Optional[str] = None,
     size: Optional[str] = None,
+    max_price: Optional[float] = None,
 ) -> Sequence[ProductOut]:
     cache_key = _cache_key(
-        "products", search=search, category=category, tag=tag, size=size
+        "products", search=search, category=category, tag=tag, size=size, max_price=max_price
     )
     redis = await get_redis()
 
@@ -43,6 +44,8 @@ async def list_products(
         ]
     if size:
         where["sizes"] = {"contains": size}
+    if max_price is not None:
+        where["price"] = {"lte": max_price}
 
     products = await prisma.product.find_many(where=where or None, order={"createdAt": "desc"})
 

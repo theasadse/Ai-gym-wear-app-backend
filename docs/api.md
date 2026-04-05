@@ -15,6 +15,7 @@ OpenAPI JSON: `http://localhost:8000/openapi.json`
     - `category` – exact category
     - `tag` – tag string
     - `size` – size substring match in `sizes`
+    - `maxPrice` – filter by maximum price (USD)
   - Response 200: `Product[]`
   - Caching: 60s in Redis (keyed by filters).
   - Product shape:
@@ -40,6 +41,9 @@ OpenAPI JSON: `http://localhost:8000/openapi.json`
 - `GET /recommendations` (also `/api/recommendations`)
   - Query params: `userId` (optional) — personalization hook
   - Response 200: `Product[]` (featured/new arrivals fallback)
+
+- `GET /products/{product_id}` (also `/api/products/{product_id}`)
+  - Returns single product detail.
 
 ## AI Chat
 - `POST /chat` (also `/api/chat`)
