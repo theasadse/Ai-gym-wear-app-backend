@@ -1,6 +1,6 @@
 import asyncio
 from functools import lru_cache
-from typing import Optional
+from typing import Optional, List, Dict
 
 from transformers import pipeline, Pipeline
 
@@ -16,8 +16,10 @@ class AIBotService:
     def __init__(self, model_pipeline: Pipeline):
         self._pipeline = model_pipeline
 
-    async def generate_reply(self, message: str, context: Optional[str] = None) -> str:
-        prompt = self._build_prompt(message, context)
+    async def generate_reply(
+        self, message: str, history: Optional[List[Dict[str, str]]] = None
+    ) -> str:
+        prompt = self._build_prompt(message, history)
         loop = asyncio.get_event_loop()
         logger.info("Generating reply", extra={"model": settings.model_name})
         # Run the blocking HF pipeline in a thread to avoid blocking the event loop.
@@ -32,13 +34,16 @@ class AIBotService:
         return generated.strip()
 
     @staticmethod
-    def _build_prompt(message: str, context: Optional[str]) -> str:
-        context_part = f"Context: {context}\n" if context else ""
+    def _build_prompt(message: str, history: Optional[List[Dict[str, str]]]) -> str:
+        conversation = ""
+        if history:
+            for turn in history[-6:]:
+                role = "User" if turn.get("role") == "user" else "Assistant"
+                conversation += f"{role}: {turn.get('content','').strip()}\n"
+        conversation += f"User: {message}\nAssistant:"
         return (
-            f"{context_part}"
             "You are a helpful gym wear shopping assistant that knows about products, sizes, and fit advice.\n"
-            f"User: {message}\n"
-            "Assistant:"
+            + conversation
         )
 
 

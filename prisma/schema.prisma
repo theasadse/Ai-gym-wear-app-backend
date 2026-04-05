@@ -1,5 +1,6 @@
 generator client {
   provider = "prisma-client-py"
+  enable_experimental_decimal = true
 }
 
 datasource db {
@@ -12,10 +13,15 @@ model Product {
   name        String
   description String?
   price       Decimal  @db.Decimal(10, 2)
-  imageUrl    String
   category    String
-  sizes       String   // comma-separated sizes (e.g., "XS,S,M,L,XL")
-  inventory   Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  image       String
+  colors      String[]
+  tags        String[]
+  rating      Float     @default(0)
+  stock       Int       @default(0)
+  featured    Boolean   @default(false)
+  newArrival  Boolean   @default(false)
+  sizes       String    // comma-separated sizes (e.g., "XS,S,M,L,XL")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }

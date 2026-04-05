@@ -23,7 +23,7 @@ async def get_redis() -> redis.Redis:
 
 
 @asynccontextmanager
-async def lifespan():
+async def lifespan(_app=None):
     logger.info("Connecting to database and cache")
     await prisma.connect()
     await get_redis()

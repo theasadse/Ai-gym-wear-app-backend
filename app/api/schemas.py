@@ -1,13 +1,18 @@
 from decimal import Decimal
-from typing import Optional
+from typing import Optional, List, Literal
 
 from pydantic import BaseModel, Field, ConfigDict
 
 
+class ChatHistoryItem(BaseModel):
+    role: Literal["user", "assistant"]
+    content: str
+
+
 class ChatRequest(BaseModel):
     message: str = Field(..., description="User message to the AI bot")
-    context: Optional[str] = Field(
-        None, description="Optional conversation or product context"
+    history: Optional[List[ChatHistoryItem]] = Field(
+        None, description="Optional prior messages to keep context"
     )
 
 
@@ -22,7 +27,12 @@ class ProductOut(BaseModel):
     name: str
     description: Optional[str]
     price: float
-    imageUrl: str
     category: str
+    image: str
+    colors: List[str]
+    tags: List[str]
+    rating: float
+    stock: int
+    featured: bool
+    newArrival: bool
     sizes: str
-    inventory: int
