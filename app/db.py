@@ -1,3 +1,4 @@
+import os
 from contextlib import asynccontextmanager
 from typing import Optional
 
@@ -6,6 +7,9 @@ from prisma import Prisma
 
 from app.core.config import settings
 from app.core.logger import logger
+
+# Use library engine to avoid spawning a separate port-listening process in restricted environments.
+os.environ.setdefault("PRISMA_CLIENT_ENGINE_TYPE", "library")
 
 prisma = Prisma()
 _redis: Optional[redis.Redis] = None

@@ -35,6 +35,14 @@ class Settings(BaseSettings):
         default_factory=lambda: ["*"],
         description="CORS allowed origins list.",
     )
+    gemini_api_key: str = Field(
+        default="",
+        description="Google Gemini API key; when set, Gemini is used instead of local HF model.",
+    )
+    gemini_model: str = Field(
+        default="gemini-1.5-flash-latest",
+        description="Gemini model to use when gemini_api_key is provided (e.g., gemini-1.5-flash-latest).",
+    )
 
 
 @lru_cache

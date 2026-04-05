@@ -46,6 +46,7 @@ cp .env.example .env \
 - Swagger UI: `http://localhost:8000/docs`
 - ReDoc: `http://localhost:8000/redoc`
 - OpenAPI JSON: `http://localhost:8000/openapi.json`
+- AI: By default uses a local HF text-generation model. To use Google Gemini instead, set `GEMINI_API_KEY` and (optionally) `GEMINI_MODEL` in `.env`; the backend will switch to Gemini automatically.
 
 ## Useful commands
 - Start services only: `docker compose up -d`

@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 
 from app.api.schemas import ChatRequest, ChatResponse, ProductOut
 from app.services.ai_bot import get_ai_bot, AIBotService
@@ -18,7 +18,10 @@ async def chat(
     Accept a user message and return the AI bot reply.
     """
     hist = [h.model_dump() for h in payload.history] if payload.history else None
-    reply = await bot.generate_reply(payload.message, history=hist)
+    try:
+        reply = await bot.generate_reply(payload.message, history=hist)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail="AI suggestions service unavailable") from exc
     return ChatResponse(reply=reply)
 
 

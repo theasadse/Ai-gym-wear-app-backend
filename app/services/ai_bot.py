@@ -2,7 +2,7 @@ import asyncio
 from functools import lru_cache
 from typing import Optional, List, Dict
 
-from transformers import pipeline, Pipeline
+import google.generativeai as genai
 
 from app.core.config import settings
 from app.core.logger import logger
@@ -10,10 +10,17 @@ from app.core.logger import logger
 
 class AIBotService:
     """
-    Thin wrapper around a text-generation pipeline so it can be swapped easily.
+    Thin wrapper around a text-generation provider so it can be swapped easily.
     """
 
-    def __init__(self, model_pipeline: Pipeline):
+    async def generate_reply(
+        self, message: str, history: Optional[List[Dict[str, str]]] = None
+    ) -> str:  # pragma: no cover - interface
+        raise NotImplementedError
+
+
+class HFAIBotService(AIBotService):
+    def __init__(self, model_pipeline):
         self._pipeline = model_pipeline
 
     async def generate_reply(
@@ -22,13 +29,10 @@ class AIBotService:
         prompt = self._build_prompt(message, history)
         loop = asyncio.get_event_loop()
         logger.info("Generating reply", extra={"model": settings.model_name})
-        # Run the blocking HF pipeline in a thread to avoid blocking the event loop.
         outputs = await loop.run_in_executor(
             None, lambda: self._pipeline(prompt, max_new_tokens=settings.max_tokens)
         )
-        # HF pipeline returns list of dicts with 'generated_text'
         generated = outputs[0]["generated_text"]
-        # Strip the prompt prefix if returned.
         if generated.startswith(prompt):
             generated = generated[len(prompt) :].strip()
         return generated.strip()
@@ -47,8 +51,51 @@ class AIBotService:
         )
 
 
+class GeminiAIBotService(AIBotService):
+    def __init__(self, api_key: str, model_name: str, fallback: Optional["HFAIBotService"] = None):
+        genai.configure(api_key=api_key)
+        self.model = genai.GenerativeModel(model_name)
+        self.model_name = model_name
+        self.fallback = fallback
+
+    async def generate_reply(
+        self, message: str, history: Optional[List[Dict[str, str]]] = None
+    ) -> str:
+        def _sync_call():
+            chat = self.model.start_chat(
+                history=[
+                    {"role": "user" if h.get("role") == "user" else "model", "parts": h.get("content", "")}
+                    for h in (history or [])[-6:]
+                ]
+            )
+            resp = chat.send_message(message)
+            return resp.text or ""
+
+        loop = asyncio.get_event_loop()
+        logger.info("Generating reply via Gemini", extra={"model": settings.gemini_model})
+        try:
+            return (await loop.run_in_executor(None, _sync_call)).strip()
+        except Exception as exc:
+            # If model name is missing suffix, try -latest once.
+            if "not found" in str(exc).lower() and not self.model_name.endswith("-latest"):
+                alt = f"{self.model_name}-latest"
+                logger.warning("Gemini model not found; retrying with %s", alt)
+                genai.configure(api_key=settings.gemini_api_key)
+                self.model = genai.GenerativeModel(alt)
+                self.model_name = alt
+                return await self.generate_reply(message, history)
+
+            logger.error("Gemini generation failed", exc_info=exc)
+            if self.fallback:
+                return await self.fallback.generate_reply(message, history)
+            raise
+
+
 @lru_cache
-def _load_pipeline() -> Pipeline:
+def _load_pipeline():
+    # Lazy import to avoid torch import unless needed.
+    from transformers import pipeline  # type: ignore
+
     logger.info("Loading model pipeline", extra={"model": settings.model_name})
     return pipeline(
         "text-generation",
@@ -58,5 +105,7 @@ def _load_pipeline() -> Pipeline:
 
 
 def get_ai_bot() -> AIBotService:
-    pipe = _load_pipeline()
-    return AIBotService(pipe)
+    if settings.gemini_api_key:
+        # No HF fallback by default to avoid torch import issues in restricted envs.
+        return GeminiAIBotService(settings.gemini_api_key, settings.gemini_model, fallback=None)
+    return HFAIBotService(_load_pipeline())
