@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes import router as api_router, public_router
 from app.db import lifespan
 from app.core.config import settings
+from app.middleware.rate_limit import RateLimitMiddleware
 
 
 tags_metadata = [
@@ -38,6 +39,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
     allow_credentials=True,
+)
+app.add_middleware(
+    RateLimitMiddleware,
+    limit=settings.rate_limit_requests,
+    window_seconds=settings.rate_limit_window_seconds,
+    exempt_paths=set(settings.rate_limit_exempt_paths),
 )
 
 

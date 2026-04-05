@@ -40,8 +40,18 @@ class Settings(BaseSettings):
         description="Google Gemini API key; when set, Gemini is used instead of local HF model.",
     )
     gemini_model: str = Field(
-        default="gemini-1.5-flash-latest",
-        description="Gemini model to use when gemini_api_key is provided (e.g., gemini-1.5-flash-latest).",
+        default="gemini-pro",
+        description="Gemini model to use when gemini_api_key is provided (e.g., gemini-pro or gemini-1.0-pro).",
+    )
+    rate_limit_requests: int = Field(
+        30, description="Requests allowed per IP per path within the rate limit window."
+    )
+    rate_limit_window_seconds: int = Field(
+        60, description="Window in seconds for rate limiting."
+    )
+    rate_limit_exempt_paths: list[str] = Field(
+        default_factory=lambda: ["/health", "/docs", "/redoc", "/openapi.json"],
+        description="Paths excluded from rate limiting.",
     )
 
 
