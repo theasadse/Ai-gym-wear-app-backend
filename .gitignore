@@ -1,0 +1,40 @@
+# Environments
+.env
+.venv
+venv/
+ENV/
+env/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyc
+
+# Byte-compiled / optimized / DLL files
+*.so
+
+# Virtualenvs
+.python-version
+
+# Node (if used later)
+node_modules/
+
+# Prisma artifacts
+prisma/.prisma/
+prisma/migrations/
+
+# Local data
+postgres_data/
+redis_data/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Tooling
+.coverage
+*.log
+
+# PyCharm / VSCode
+.idea/
+.vscode/
